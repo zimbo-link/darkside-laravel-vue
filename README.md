@@ -1,6 +1,8 @@
 # Darkside Assesment
 
-Darkside Customer app with Authentication using REST API + Laravel Sanctum.
+A simple Customer application with Authentication using REST API, Laravel Sanctum, Vue.js and Tailwind. 
+The application comprises of a SPA built with Vue.js for a frictionless user experience and Laravel API to persist data to a MySql database.
+The front end theming is built with Tailwind for it's simplicity and development speed.
 
 ## Setup 
 - Make sure you have PHP8 & MySQL installed on your machine.
