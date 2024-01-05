@@ -1,0 +1,186 @@
+<template>
+    <div class="w-full p-10 mx-auto">
+        <div class="flex justify-between">
+            <h1 class="text-2xl"> Customers </h1>
+            <span class="capitalize">Welcome {{ user && user.name }}, <button
+                class="text-orange-500 underline hover:no-underline rounded-md"
+                @click="handleLogout">Logout</button></span>
+        </div>
+   
+        <Loader v-if="isLoading"/>
+        <div class="mx-auto w-full mt-10 bg-blue-200 p-4 rounded-lg">
+        <div class="bg-white shadow-lg rounded-lg px-8 pt-6 pb-8 mb-2 flex flex-col" >
+            <h1 class="text-gray-600 py-5 font-bold text-3xl"> Update Customer </h1>
+            <ul class="list-disc text-red-400" v-for="(value, index) in errors" :key="index">
+                <li>{{value[0]}}</li>
+            </ul>
+            <form method="post" @submit="handleSubmit">
+            <div class="mb-4 mt-3">
+                <label
+                    class="block text-grey-darker text-sm font-bold mb-2"
+                    for="name"
+                >
+                   Name
+                </label>
+                <input
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker"
+                    id="name"
+                    type="text"
+                    required
+                    v-model="customer.name"
+                />
+            </div>
+            <div class="mb-4">
+                <label
+                    class="block text-grey-darker text-sm font-bold mb-2"
+                    for="email"
+                >
+                    Email
+                </label>
+                <input
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker"
+                    type="email"
+                    id="email"
+                    required
+                    v-model="customer.email"
+                />
+            </div>
+            <div class="mb-4">
+                <label
+                    class="block text-grey-darker text-sm font-bold mb-2"
+                    for="phone"
+                >
+                    Phone
+                </label>
+                <input
+                    class="shadow appearance-none border border-red rounded w-full py-2 px-3 text-grey-darker mb-3"
+                    id="phone"
+                    type="text"
+                    required
+                    v-model="customer.phone"
+                    v-maska data-maska="###-###-####"
+                />
+            </div>
+            <div class="mb-4">
+                <label
+                    class="block text-grey-darker text-sm font-bold mb-2"
+                    for="password"
+                >
+                    Address
+                </label>
+                <input
+                    class="shadow appearance-none border border-red rounded w-full py-2 px-3 text-grey-darker mb-3"
+                    id="address"
+                    type="text"
+                    required
+                    v-model="customer.address"
+                />
+            </div>
+            <div class="flex items-center justify-between">
+                <router-link
+                    class="inline-block align-baseline font-bold text-sm text-blue hover:text-blue-darker"
+                    to="/home"
+                >
+                    Cancel
+                </router-link>
+                <button
+                    class="bg-blue-500 hover:bg-blue-900 text-white font-bold py-2 px-4 rounded"
+                    type="submit"
+                >
+                    Update
+                </button>
+            </div>
+            </form>
+        </div></div>
+    </div>
+</template>
+ 
+<script>
+import {reactive, ref, onMounted} from 'vue';
+import axios from 'axios';
+import {useRouter} from "vue-router";
+import {request} from '../helper'
+import Loader from '../components/Loader.vue';
+import { vMaska } from "maska"
+
+export default {
+    directives: { maska: vMaska },
+    components: {
+        Loader,
+    },
+  data () {
+    return {
+        customer: {}
+    }
+  },
+    setup() {
+        const errors = ref();
+        const user = ref();
+        let router = useRouter();
+        const isLoading = ref();
+
+        onMounted(() => {
+            authentication() 
+            isLoading.value = false
+        });
+
+        const authentication = async () => {
+            isLoading.value = true
+            try {
+                const req = await request('get', '/api/user')
+                user.value = req.data
+           } catch (e) {
+                await router.push('/')
+            }
+        }
+
+        const handleLogout = () => {
+            localStorage.removeItem('APP_DEMO_USER_TOKEN')
+            router.push('/')
+        }
+
+        const handleSubmit = async(evt) => {
+            evt.preventDefault()
+         
+            try {
+                const url = window.location.href;
+                const lastParam = url.split("/").slice(-1)[0];
+                const result = await request('put', '/api/customers/'+lastParam, {
+                    "name": evt.target[0].value,
+                    "email": evt.target[1].value,
+                    "phone": evt.target[2].value,
+                    "address": evt.target[3].value
+                });
+          
+                if (result.data.message) {
+                    isLoading.value = false
+                    return alert(result.data.message)
+                }
+         
+                if (result.status === 202 && result.data.data ) {
+                    await router.push('/home')
+                }
+            
+            }catch (e) {
+                if(e.response.data && e.response.data.errors) {
+                    errors.value = Object.values(e.response.data.errors)
+                }
+           }
+        }
+        return {
+            errors,
+            user,
+            isLoading,
+            handleSubmit,
+            handleLogout,
+        }
+    },
+    mounted() {
+        let id = this.$route.params.id;
+        request('get', '/api/customers/'+id).then((response) => {
+            this.customer = response.data
+        });
+    },
+ 
+}
+</script>
